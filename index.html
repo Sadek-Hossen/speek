@@ -1,156 +1,222 @@
-
-
 <!DOCTYPE html>
 <html>
 <head>
   <title>Translator + Voice Selector + Voice Play</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 40px;
+      background-color: blue;
+      color: white;
+    }
 
+    textarea {
+      width: 60%;
+      height: 100px;
+      background-color: rgb(165, 186, 165);
+      color: black;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    select, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+    }
+
+    #translatedText {
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 60px;
+      width: 60%;
+      margin: 20px auto;
+      white-space: pre-wrap;
+      background-color: white;
+      color: black;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    .main {
+      background-color: rgb(56, 68, 68);
+      padding: 20px;
+      border-radius: 20px;
+      padding-right: 0px;
+    }
+
+    .inner {
+      /* background-color: blue; */
+      width: 70%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      textarea, #translatedText {
+        width: 90%;
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
-    textarea { width: 60%; height: 100px; }
-    select, button { padding: 10px; margin: 10px; font-size: 16px; }
-    #translatedText { border: 1px solid #ccc; padding: 10px; min-height: 60px; width: 60%; margin: 20px auto; white-space: pre-wrap; }
-    label { font-weight: bold; };
-
-    
-  </style>
-
-  <!-- main div -->
-
   <div class="main">
+    <div class="inner">
+      <h2>Translator + Voice Selector + Voice Play</h2>
 
+      <label for="textInput">Enter English Text:</label><br>
+      <textarea id="textInput" placeholder="Type text here..."></textarea><br>
 
-    
-  <h2>Translator + Voice Selector + Voice Play</h2>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; padding-bottom: 100px;">
+        <div>
+        
+          <select id="langSelect" style="background-color: rgb(87, 87, 227); color: wheat; border-radius: 10px; ">
+            <option value="disabled selected">Selected Language</option>
+            <option value="en">English</option>
+            <option value="bn">Bengali</option>
+            <option value="hi">Hindi</option>
+            <option value="fr">French</option>
+            <option value="ar">Arabic</option>
+            <option value="es">Spanish</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+            <option value="ru">Russian</option>
+            <option value="ko">Korean</option>
+          </select>
+        </div>
 
-  <label for="textInput">Enter English Text:</label><br>
-  <textarea style="background-color: rgb(165, 186, 165); color: black; font-weight: 800; font-size: 20px;" id="textInput" placeholder="Type text here..."></textarea><br>
+        <div>
 
-  <label for="langSelect">Select Target Language:</label><br>
-  <select  style="background-color: rgb(87, 87, 227); color: wheat;" id="langSelect">
-    <option value="en">English</option>
-    <option value="bn">Bengali</option>
-    <option value="hi">Hindi</option>
-    <option value="fr">French</option>
-    <option value="ar">Arabic</option>
-    <option value="es">Spanish</option>
-    <option value="de">German</option>
-    <option value="ja">Japanese</option>
-    <option value="ru">Russian</option>
-    <option value="ko">Korean</option>
-  </select><br>
+          <select id="voiceSelect" style="width: 250px;"></select>
+        </div>
+      </div>
 
-  <label for="voiceSelect">Select Voice:</label><br>
-  <select id="voiceSelect"></select><br>
+      <button style="background-color: rgb(87, 87, 227); color: wheat;" onclick="translateText()">Translate</button>
+      <button style="background-color: rgb(76, 76, 129); border-radius: 10px; color: wheat;" onclick="playVoiceTranslated()">Play Translated Voice ▶️</button>
+      <button style="background-color: rgb(87, 87, 227); background-color: rgb(76, 76, 129); border-radius: 10px;  color: wheat;" onclick="playVoiceOriginal()">Play Original Text Voice ▶️</button>
 
-  <button style="background-color: rgb(87, 87, 227); color: wheat;" onclick="translateText()">Translate</button>
-  <button   style="background-color: rgb(87, 87, 227); color: wheat;" onclick="playVoiceTranslated()">Play Translated Voice</button>
-  <button  style="background-color: rgb(87, 87, 227); color: wheat;" onclick="playVoiceOriginal()">Play Original Text Voice</button>
-
-  <div id="translatedText" aria-live="polite" aria-atomic="true"></div>
+      <div id="translatedText"  aria-live="polite" aria-atomic="true">
+        <option value="select disabled" style="color: gray; font-style: italic;">Translated Text</option>
+      </div>
+    </div>
   </div>
 
+  <script>
+    let translated = '';
+    let voices = [];
+    const voiceSelect = document.getElementById('voiceSelect');
 
-<script>
-  let translated = '';
-  let voices = [];
-  const voiceSelect = document.getElementById('voiceSelect');
+    function populateVoices() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '';
 
-  function populateVoices() {
-    voices = speechSynthesis.getVoices();
-    if (!voices.length) {
-      alert('No voices available. Please try again or change your browser.');
-      return;
+      // Placeholder
+      const placeholderOption = document.createElement('option');
+      placeholderOption.textContent = 'Select Voice';
+      placeholderOption.disabled = true;
+      placeholderOption.selected = true;
+      voiceSelect.appendChild(placeholderOption);
+
+      // Actual voices
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${voice.name} - ${voice.lang}${voice.default ? ' [default]' : ''}`;
+        voiceSelect.appendChild(option);
+      });
     }
-    voiceSelect.innerHTML = '';
-    voices.forEach((voice, index) => {
-      const option = document.createElement('option');
-      option.value = index;
-      option.textContent = `${voice.name} (${voice.lang})${voice.default ? ' [default]' : ''}`;
-      voiceSelect.appendChild(option);
-    });
-  }
 
-  speechSynthesis.onvoiceschanged = populateVoices;
-  populateVoices();
+    if (typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.onvoiceschanged = populateVoices;
+      setTimeout(populateVoices, 100);
+    }
 
-  async function translateText() {
-    const text = document.getElementById('textInput').value.trim();
-    const targetLang = document.getElementById('langSelect').value;
-    if (!text) {
-      alert('Please enter some text!');
-      return;
-    }
-    if (targetLang === 'en') {
-      translated = text;
-      document.getElementById('translatedText').innerText = translated;
-      return;
-    }
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        alert('Translation failed.');
+    async function translateText() {
+      const text = document.getElementById('textInput').value.trim();
+      const targetLang = document.getElementById('langSelect').value;
+      if (!text) {
+        alert('Please enter some text!');
         return;
       }
-      const data = await res.json();
-      translated = data[0].map(item => item[0]).join('');
-      document.getElementById('translatedText').innerText = translated;
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  }
+      if (targetLang === 'en') {
+        translated = text;
+        document.getElementById('translatedText').innerText = translated;
+        return;
+      }
 
-  function playVoiceTranslated() {
-    if (!translated) {
-      alert('Please translate text first!');
-      return;
-    }
-
-    const targetLang = document.getElementById('langSelect').value;
-    const selectedIndex = voiceSelect.value;
-    let selectedVoice = voices[selectedIndex];
-
-    if (!selectedVoice.lang.toLowerCase().startsWith(targetLang.toLowerCase())) {
-      const altVoice = voices.find(v => v.lang.toLowerCase().startsWith(targetLang.toLowerCase()));
-      if (altVoice) {
-        selectedVoice = altVoice;
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          alert('Translation failed.');
+          return;
+        }
+        const data = await res.json();
+        translated = data[0].map(item => item[0]).join('');
+        document.getElementById('translatedText').innerText = translated;
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
     }
 
-    const utterance = new SpeechSynthesisUtterance(translated);
-    utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang || targetLang;
-    speechSynthesis.speak(utterance);
-  }
-
-  function playVoiceOriginal() {
-    const text = document.getElementById('textInput').value.trim();
-    if (!text) {
-      alert('Please enter some text!');
-      return;
-    }
-    const selectedIndex = voiceSelect.value;
-    let selectedVoice = voices[selectedIndex];
-    if (!selectedVoice.lang.toLowerCase().startsWith('en')) {
-      const altVoice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
-      if (altVoice) {
-        selectedVoice = altVoice;
+    function playVoiceTranslated() {
+      if (!translated) {
+        alert('Please translate text first!');
+        return;
       }
-    }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang || 'en-US';
-    speechSynthesis.speak(utterance);
-  }
-</script>
 
+      if (voiceSelect.selectedIndex <= 0) {
+        alert("Please select a voice first!");
+        return;
+      }
+
+      const selectedIndex = voiceSelect.value;
+      let selectedVoice = voices[selectedIndex];
+      const targetLang = document.getElementById('langSelect').value;
+
+      if (!selectedVoice.lang.toLowerCase().startsWith(targetLang.toLowerCase())) {
+        const altVoice = voices.find(v => v.lang.toLowerCase().startsWith(targetLang.toLowerCase()));
+        if (altVoice) {
+          selectedVoice = altVoice;
+        }
+      }
+
+      const utterance = new SpeechSynthesisUtterance(translated);
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang || targetLang;
+      speechSynthesis.speak(utterance);
+    }
+
+    function playVoiceOriginal() {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) {
+        alert('Please enter some text!');
+        return;
+      }
+
+      if (voiceSelect.selectedIndex <= 0) {
+        alert("Please select a voice first!");
+        return;
+      }
+
+      const selectedIndex = voiceSelect.value;
+      let selectedVoice = voices[selectedIndex];
+
+      if (!selectedVoice.lang.toLowerCase().startsWith('en')) {
+        const altVoice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
+        if (altVoice) {
+          selectedVoice = altVoice;
+        }
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang || 'en-US';
+      speechSynthesis.speak(utterance);
+    }
+  </script>
 </body>
 </html>
-
-
-
-<!--  -->
